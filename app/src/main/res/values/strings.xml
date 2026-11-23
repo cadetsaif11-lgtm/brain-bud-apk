@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">BrainBuddy</string>
+    <string name="developer_name">Abdullah Saif Bin Nazrul</string>
+    <string name="developer_credit_prefix">Crafted by</string>
+    <string name="tagline_minimal">Your AI-powered cognitive study companion</string>
+    <string name="auth_subtitle">Convert notes into flashcards &amp; quizzes, pinpoint weak areas, and track mastery effortlessly.</string>
+    <string name="sign_in_with_google">Continue with Google</string>
+    <string name="cd_study_hero">BrainBuddy study workspace illustration</string>
+    <string name="cd_empty_decks">Empty flashcard stack illustration</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_studio">Buddy &amp; Focus</string>
+</resources>

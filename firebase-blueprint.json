@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Learner profile, aggregate study metrics, and AI weak-area summary for a BrainBuddy user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "displayName": { "type": "string", "description": "Display name of the learner." },
+        "totalStudyMinutes": { "type": "integer", "description": "Total minutes spent studying." },
+        "quizzesCompleted": { "type": "integer", "description": "Number of quizzes finished." },
+        "cardsMastered": { "type": "integer", "description": "Total flashcards marked as mastered." },
+        "currentStreakDays": { "type": "integer", "description": "Consecutive active study days." },
+        "totalXp": { "type": "integer", "description": "Accumulated learning XP." },
+        "lastStudiedDate": { "type": "string", "description": "ISO date string (YYYY-MM-DD) of last study activity." },
+        "weakAreaSummary": { "type": "string", "description": "Latest AI diagnosis summary of weak areas." },
+        "weakTopics": { "type": "array", "description": "Bounded list of up to 20 identified weak concept names." },
+        "studyRecommendations": { "type": "array", "description": "Bounded list of up to 10 AI study recommendations." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of profile creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last profile update." }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "totalStudyMinutes",
+        "quizzesCompleted",
+        "cardsMastered",
+        "currentStreakDays",
+        "totalXp",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudyDeck": {
+      "title": "StudyDeck",
+      "description": "A study deck generated from user notes containing summary, mastery counts, and weak concepts.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "title": { "type": "string", "description": "Deck title." },
+        "subject": { "type": "string", "description": "Subject category." },
+        "sourceNotes": { "type": "string", "description": "Original study notes text." },
+        "aiSummary": { "type": "string", "description": "AI-distilled key takeaways summary." },
+        "flashcardCount": { "type": "integer", "description": "Total flashcards in this deck." },
+        "masteredCount": { "type": "integer", "description": "Mastered flashcards in this deck." },
+        "quizCount": { "type": "integer", "description": "Total quiz questions in this deck." },
+        "lastScorePercent": { "type": "integer", "description": "Most recent quiz score percentage, or -1 if unattempted." },
+        "weakConcepts": { "type": "array", "description": "Up to 20 weak concepts flagged in this deck." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp when deck was created." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp when deck was last updated." }
+      },
+      "required": [
+        "userId",
+        "title",
+        "subject",
+        "sourceNotes",
+        "aiSummary",
+        "flashcardCount",
+        "masteredCount",
+        "quizCount",
+        "lastScorePercent",
+        "weakConcepts",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "An individual flashcard belonging to a study deck.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "deckId": { "type": "string", "description": "Parent StudyDeck document ID." },
+        "front": { "type": "string", "description": "Question or prompt side of the flashcard." },
+        "back": { "type": "string", "description": "Answer or explanation side of the flashcard." },
+        "hint": { "type": "string", "description": "Optional study hint." },
+        "conceptTag": { "type": "string", "description": "Concept tag used for weak-area tracking." },
+        "masteryLevel": { "type": "string", "enum": ["NEW", "LEARNING", "MASTERED"], "description": "Current mastery state." },
+        "reviewCount": { "type": "integer", "description": "Total times reviewed." },
+        "missCount": { "type": "integer", "description": "Total times marked as needs review." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp." }
+      },
+      "required": [
+        "userId",
+        "deckId",
+        "front",
+        "back",
+        "hint",
+        "conceptTag",
+        "masteryLevel",
+        "reviewCount",
+        "missCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "QuizQuestion": {
+      "title": "QuizQuestion",
+      "description": "A multiple-choice quiz question belonging to a study deck.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "deckId": { "type": "string", "description": "Parent StudyDeck document ID." },
+        "prompt": { "type": "string", "description": "Question text." },
+        "options": { "type": "array", "description": "Four multiple-choice answer strings." },
+        "correctIndex": { "type": "integer", "description": "Zero-based index (0-3) of the correct option." },
+        "explanation": { "type": "string", "description": "AI explanation for the correct answer." },
+        "conceptTag": { "type": "string", "description": "Concept tag for weak-area analytics." },
+        "timesAnswered": { "type": "integer", "description": "Number of attempts." },
+        "timesMissed": { "type": "integer", "description": "Number of incorrect attempts." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp." }
+      },
+      "required": [
+        "userId",
+        "deckId",
+        "prompt",
+        "options",
+        "correctIndex",
+        "explanation",
+        "conceptTag",
+        "timesAnswered",
+        "timesMissed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudySession": {
+      "title": "StudySession",
+      "description": "An immutable log entry for a completed quiz, flashcard review, or focus timer session.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "deckId": { "type": "string", "description": "Associated deck ID, or empty string for standalone focus." },
+        "deckTitle": { "type": "string", "description": "Deck or focus session label." },
+        "sessionType": { "type": "string", "enum": ["QUIZ", "FLASHCARDS", "FOCUS"], "description": "Activity type." },
+        "scorePercent": { "type": "integer", "description": "Score percentage (0-100)." },
+        "durationMinutes": { "type": "integer", "description": "Duration in minutes." },
+        "weakTags": { "type": "array", "description": "Concept tags missed during this session." },
+        "dayKey": { "type": "string", "description": "Date key (YYYY-MM-DD) for weekly progress charts." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp." }
+      },
+      "required": [
+        "userId",
+        "deckId",
+        "deckTitle",
+        "sessionType",
+        "scorePercent",
+        "durationMinutes",
+        "weakTags",
+        "dayKey",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Per-user learning profile and aggregate progress stats."
+    },
+    "/users/{userId}/decks/{deckId}": {
+      "schema": { "$ref": "#/entities/StudyDeck" },
+      "description": "Study decks created from user notes."
+    },
+    "/users/{userId}/decks/{deckId}/flashcards/{cardId}": {
+      "schema": { "$ref": "#/entities/Flashcard" },
+      "description": "Flashcards within a study deck."
+    },
+    "/users/{userId}/decks/{deckId}/questions/{questionId}": {
+      "schema": { "$ref": "#/entities/QuizQuestion" },
+      "description": "Quiz questions within a study deck."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/StudySession" },
+      "description": "Completed study and quiz session logs."
+    }
+  }
+}

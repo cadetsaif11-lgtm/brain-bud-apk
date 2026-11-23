@@ -1,0 +1,258 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidStringList(listVal, maxItems) {
+      return listVal is list &&
+             listVal.size() <= maxItems &&
+             (listVal.size() == 0 || listVal[0] is string);
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.totalStudyMinutes is int && data.totalStudyMinutes >= 0 && data.totalStudyMinutes <= 1000000 &&
+             data.quizzesCompleted is int && data.quizzesCompleted >= 0 && data.quizzesCompleted <= 100000 &&
+             data.cardsMastered is int && data.cardsMastered >= 0 && data.cardsMastered <= 100000 &&
+             data.currentStreakDays is int && data.currentStreakDays >= 0 && data.currentStreakDays <= 10000 &&
+             data.totalXp is int && data.totalXp >= 0 && data.totalXp <= 10000000 &&
+             (!('lastStudiedDate' in data) || (data.lastStudiedDate is string && data.lastStudiedDate.size() <= 32)) &&
+             (!('weakAreaSummary' in data) || (data.weakAreaSummary is string && data.weakAreaSummary.size() <= 2000)) &&
+             (!('weakTopics' in data) || isValidStringList(data.weakTopics, 20)) &&
+             (!('studyRecommendations' in data) || isValidStringList(data.studyRecommendations, 10)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidStudyDeck(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60 &&
+             data.sourceNotes is string && data.sourceNotes.size() >= 1 && data.sourceNotes.size() <= 15000 &&
+             data.aiSummary is string && data.aiSummary.size() <= 4000 &&
+             data.flashcardCount is int && data.flashcardCount >= 0 && data.flashcardCount <= 200 &&
+             data.masteredCount is int && data.masteredCount >= 0 && data.masteredCount <= 200 &&
+             data.quizCount is int && data.quizCount >= 0 && data.quizCount <= 100 &&
+             data.lastScorePercent is int && data.lastScorePercent >= -1 && data.lastScorePercent <= 100 &&
+             isValidStringList(data.weakConcepts, 20) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFlashcard(data, userId, deckId) {
+      return data.userId == userId &&
+             data.deckId == deckId &&
+             data.front is string && data.front.size() >= 1 && data.front.size() <= 1000 &&
+             data.back is string && data.back.size() >= 1 && data.back.size() <= 2000 &&
+             data.hint is string && data.hint.size() <= 500 &&
+             data.conceptTag is string && data.conceptTag.size() >= 1 && data.conceptTag.size() <= 80 &&
+             data.masteryLevel in ['NEW', 'LEARNING', 'MASTERED'] &&
+             data.reviewCount is int && data.reviewCount >= 0 && data.reviewCount <= 10000 &&
+             data.missCount is int && data.missCount >= 0 && data.missCount <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidQuizQuestion(data, userId, deckId) {
+      return data.userId == userId &&
+             data.deckId == deckId &&
+             data.prompt is string && data.prompt.size() >= 1 && data.prompt.size() <= 1000 &&
+             data.options is list && data.options.size() == 4 &&
+             data.options[0] is string && data.options[0].size() >= 1 && data.options[0].size() <= 500 &&
+             data.options[1] is string && data.options[1].size() >= 1 && data.options[1].size() <= 500 &&
+             data.options[2] is string && data.options[2].size() >= 1 && data.options[2].size() <= 500 &&
+             data.options[3] is string && data.options[3].size() >= 1 && data.options[3].size() <= 500 &&
+             data.correctIndex is int && data.correctIndex >= 0 && data.correctIndex <= 3 &&
+             data.explanation is string && data.explanation.size() <= 1500 &&
+             data.conceptTag is string && data.conceptTag.size() >= 1 && data.conceptTag.size() <= 80 &&
+             data.timesAnswered is int && data.timesAnswered >= 0 && data.timesAnswered <= 10000 &&
+             data.timesMissed is int && data.timesMissed >= 0 && data.timesMissed <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidStudySession(data, userId) {
+      return data.userId == userId &&
+             data.deckId is string && data.deckId.size() <= 128 &&
+             data.deckTitle is string && data.deckTitle.size() >= 1 && data.deckTitle.size() <= 120 &&
+             data.sessionType in ['QUIZ', 'FLASHCARDS', 'FOCUS'] &&
+             data.scorePercent is int && data.scorePercent >= 0 && data.scorePercent <= 100 &&
+             data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 600 &&
+             isValidStringList(data.weakTags, 20) &&
+             data.dayKey is string && data.dayKey.size() >= 1 && data.dayKey.size() <= 32 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'totalStudyMinutes', 'quizzesCompleted',
+                         'cardsMastered', 'currentStreakDays', 'totalXp', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'totalStudyMinutes', 'quizzesCompleted',
+                         'cardsMastered', 'currentStreakDays', 'totalXp', 'lastStudiedDate',
+                         'weakAreaSummary', 'weakTopics', 'studyRecommendations', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'totalStudyMinutes', 'quizzesCompleted',
+                         'cardsMastered', 'currentStreakDays', 'totalXp', 'lastStudiedDate',
+                         'weakAreaSummary', 'weakTopics', 'studyRecommendations', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /decks/{deckId} {
+        allow get: if isOwner(userId) && isValidId(deckId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(deckId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'subject', 'sourceNotes', 'aiSummary',
+                           'flashcardCount', 'masteredCount', 'quizCount', 'lastScorePercent',
+                           'weakConcepts', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'subject', 'sourceNotes', 'aiSummary',
+                           'flashcardCount', 'masteredCount', 'quizCount', 'lastScorePercent',
+                           'weakConcepts', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidStudyDeck(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(deckId) &&
+                         isValidStudyDeck(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'subject', 'aiSummary', 'flashcardCount',
+                           'masteredCount', 'quizCount', 'lastScorePercent', 'weakConcepts', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(deckId);
+
+        match /flashcards/{cardId} {
+          allow get: if isOwner(userId) && isValidId(deckId) && isValidId(cardId);
+          allow list: if isOwner(userId) && isValidId(deckId);
+
+          allow create: if isOwner(userId) &&
+                           isValidId(deckId) &&
+                           isValidId(cardId) &&
+                           incoming().keys().hasAll([
+                             'userId', 'deckId', 'front', 'back', 'hint', 'conceptTag',
+                             'masteryLevel', 'reviewCount', 'missCount', 'createdAt', 'updatedAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'userId', 'deckId', 'front', 'back', 'hint', 'conceptTag',
+                             'masteryLevel', 'reviewCount', 'missCount', 'createdAt', 'updatedAt'
+                           ]) &&
+                           isValidFlashcard(incoming(), userId, deckId);
+
+          allow update: if isOwner(userId) &&
+                           isValidId(deckId) &&
+                           isValidId(cardId) &&
+                           isValidFlashcard(incoming(), userId, deckId) &&
+                           incoming().userId == existing().userId &&
+                           incoming().deckId == existing().deckId &&
+                           incoming().createdAt == existing().createdAt &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'front', 'back', 'hint', 'conceptTag',
+                             'masteryLevel', 'reviewCount', 'missCount', 'updatedAt'
+                           ]);
+
+          allow delete: if isOwner(userId) && isValidId(deckId) && isValidId(cardId);
+        }
+
+        match /questions/{questionId} {
+          allow get: if isOwner(userId) && isValidId(deckId) && isValidId(questionId);
+          allow list: if isOwner(userId) && isValidId(deckId);
+
+          allow create: if isOwner(userId) &&
+                           isValidId(deckId) &&
+                           isValidId(questionId) &&
+                           incoming().keys().hasAll([
+                             'userId', 'deckId', 'prompt', 'options', 'correctIndex',
+                             'explanation', 'conceptTag', 'timesAnswered', 'timesMissed',
+                             'createdAt', 'updatedAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'userId', 'deckId', 'prompt', 'options', 'correctIndex',
+                             'explanation', 'conceptTag', 'timesAnswered', 'timesMissed',
+                             'createdAt', 'updatedAt'
+                           ]) &&
+                           isValidQuizQuestion(incoming(), userId, deckId);
+
+          allow update: if isOwner(userId) &&
+                           isValidId(deckId) &&
+                           isValidId(questionId) &&
+                           isValidQuizQuestion(incoming(), userId, deckId) &&
+                           incoming().userId == existing().userId &&
+                           incoming().deckId == existing().deckId &&
+                           incoming().createdAt == existing().createdAt &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'timesAnswered', 'timesMissed', 'updatedAt'
+                           ]);
+
+          allow delete: if isOwner(userId) && isValidId(deckId) && isValidId(questionId);
+        }
+      }
+
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId) && isValidId(sessionId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(sessionId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'deckId', 'deckTitle', 'sessionType', 'scorePercent',
+                           'durationMinutes', 'weakTags', 'dayKey', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'deckId', 'deckTitle', 'sessionType', 'scorePercent',
+                           'durationMinutes', 'weakTags', 'dayKey', 'createdAt'
+                         ]) &&
+                         isValidStudySession(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(sessionId);
+      }
+    }
+  }
+}

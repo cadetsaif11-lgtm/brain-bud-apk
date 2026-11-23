@@ -1,0 +1,6 @@
+{
+  "name": "BrainBuddy",
+  "description": "AI-powered study companion by Abdullah Saif Bin Nazrul that converts notes into flashcards and quizzes, identifies weak areas, and tracks learning progress.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
